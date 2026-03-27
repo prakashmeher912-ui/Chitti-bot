@@ -16,7 +16,7 @@ def home(): return "Chitti is Online"
 def handle(m):
     query = m.text.lower()
     
-    # --- FEATURE 1: PHOTO GENERATION ---
+    # 1. PHOTO FEATURE
     if any(word in query for word in ["photo", "image", "banao", "pic"]):
         prompt = query.replace("photo", "").replace("image", "").replace("banao", "").strip()
         if prompt:
@@ -25,7 +25,7 @@ def handle(m):
             bot.send_photo(m.chat.id, image_url)
             return
 
-    # --- FEATURE 2: YOUTUBE SEARCH ---
+    # 2. YOUTUBE FEATURE
     if any(word in query for word in ["gaana", "song", "video", "youtube"]):
         song_name = query.replace("gaana", "").replace("song", "").replace("video", "").strip()
         if song_name:
@@ -34,28 +34,33 @@ def handle(m):
             bot.reply_to(m, f"Aapke liye gaana mil gaya: {yt_link}")
             return
 
-    # --- FEATURE 3: CHAT & VOICE ---
+    # 3. CHAT & VOICE (With Error Fix)
     try:
         url = "https://api.groq.com/openai/v1/chat/completions"
         headers = {"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
         data = {"model": "llama-3.3-70b-versatile", "messages": [{"role": "system", "content": "Aap Chitti AI hain. Hinglish mein jawab dein."}, {"role": "user", "content": m.text}]}
         
-        r = requests.post(url, headers=headers, json=data).json()
-        if 'choices' in r:
-            res = r['choices'][0]['message']['content']
+        response = requests.post(url, headers=headers, json=data).json()
+        
+        # Checking if 'choices' exists
+        if 'choices' in response:
+            res = response['choices'][0]['message']['content']
             bot.reply_to(m, res)
             tts = gTTS(text=res, lang='hi')
             tts.save("v.mp3")
             with open("v.mp3", "rb") as v:
                 bot.send_voice(m.chat.id, v)
             os.remove("v.mp3")
-    except:
-        pass
+        else:
+            bot.reply_to(m, "Maaf kijiyega, AI abhi jawab nahi de paa raha. Shayad API limit khatam ho gayi hai.")
+    except Exception as e:
+        print(f"Error: {e}")
 
 def run_flask():
     app.run(host='0.0.0.0', port=10000)
 
 if __name__ == "__main__":
     threading.Thread(target=run_flask).start()
-    bot.polling()
-    
+    # Log ko saaf rakhne ke liye non-stop polling
+    bot.infinity_polling()
+            
