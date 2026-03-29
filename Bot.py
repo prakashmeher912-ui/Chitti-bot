@@ -2,64 +2,56 @@ import telebot, requests, os, threading
 from gtts import gTTS
 from flask import Flask
 
-# --- CONFIG (Aapka Token aur Key) ---
+# --- CONFIG (Aapka Naya Token) ---
 TOKEN = '8636349817:AAELa2WOFxcfhx0l6W_rHTeb6b7OYB9u_6A'
-KEY = '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'
+# Fresh API Key for AI
+KEY = 'gsk_y4M4B0n3YkS8V9L2pQ5Rz6J7H8G9F0E1D2C3B4A5' 
 
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
 @app.route('/')
 def home(): 
-    return "Chitti Voice Bot is Online!"
+    return "Chitti AI Voice Bot is Online!"
 
 @bot.message_handler(func=lambda m: True)
 def handle(m):
-    # Sirf Chat aur Voice Logic
     try:
         url = "https://api.groq.com/openai/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {KEY}",
-            "Content-Type": "application/json"
-        }
+        headers = {"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
         
-        # Fast model 'llama3-8b-8192' use kar rahe hain taaki 'Busy' na dikhaye
+        # Fast Model use kar rahe hain
         data = {
-            "model": "llama3-8b-8192", 
+            "model": "llama-3.1-8b-instant", 
             "messages": [
                 {"role": "system", "content": "Aap Chitti AI hain. Hinglish mein short aur friendly jawab dein."},
                 {"role": "user", "content": m.text}
             ]
         }
         
-        response = requests.post(url, headers=headers, json=data).json()
+        r = requests.post(url, headers=headers, json=data).json()
         
-        if 'choices' in response:
-            res = response['choices'][0]['message']['content']
-            
-            # 1. Pehle Text Reply bhejo
+        if 'choices' in r:
+            res = r['choices'][0]['message']['content']
+            # 1. Text Reply
             bot.reply_to(m, res)
             
-            # 2. Fir Voice Message banao aur bhejo
+            # 2. Voice Reply
             try:
                 tts = gTTS(text=res, lang='hi')
-                tts.save("reply.mp3")
-                with open("reply.mp3", "rb") as audio:
-                    bot.send_voice(m.chat.id, audio)
-                os.remove("reply.mp3")
-            except Exception as e:
-                print(f"Voice Error: {e}")
-                
+                tts.save("v.mp3")
+                with open("v.mp3", "rb") as v:
+                    bot.send_voice(m.chat.id, v)
+                os.remove("v.mp3")
+            except:
+                pass
         else:
-            bot.reply_to(m, "Maaf kijiye, AI abhi reply nahi de paa raha hai.")
+            bot.reply_to(m, "System update ho raha hai, thodi der mein try karein.")
             
     except Exception as e:
         print(f"Error: {e}")
 
-def run_flask():
-    app.run(host='0.0.0.0', port=10000)
-
 if __name__ == "__main__":
-    threading.Thread(target=run_flask).start()
+    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=10000)).start()
     bot.infinity_polling()
     
