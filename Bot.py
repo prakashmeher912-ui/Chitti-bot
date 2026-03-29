@@ -3,7 +3,7 @@ from gtts import gTTS
 from flask import Flask
 
 # --- CONFIG (Aapka Token aur Key) ---
-TOKEN = '8636349817:AAEOsDfb0I-jHPnyr-JZEYTiHyWr7mH9STI'
+TOKEN = '8636349817:AAELa2WOFxcfhx0l6W_rHTeb6b7OYB9u_6A'
 KEY = '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'
 
 bot = telebot.TeleBot(TOKEN)
