@@ -1,8 +1,8 @@
-import telebot, requests, os, threading, urllib.parse
+import telebot, requests, os, threading
 from gtts import gTTS
 from flask import Flask
 
-# --- CONFIG ---
+# --- CONFIG (Aapka Token aur Key) ---
 TOKEN = '8636349817:AAEOsDfb0I-jHPnyr-JZEYTiHyWr7mH9STI'
 KEY = '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'
 
@@ -10,48 +10,56 @@ bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
 @app.route('/')
-def home(): return "Chitti AI is Live!"
+def home(): 
+    return "Chitti Voice Bot is Online!"
 
 @bot.message_handler(func=lambda m: True)
 def handle(m):
-    query = m.text.lower()
-    
-    # 1. PHOTO/IMAGE FEATURE
-    if any(word in query for word in ["photo", "image", "banao", "pic"]):
-        p = query.replace("photo","").replace("image","").replace("banao","").strip()
-        if p:
-            bot.reply_to(m, f"Main '{p}' ki photo bana raha hoon...")
-            bot.send_photo(m.chat.id, f"https://image.pollinations.ai/prompt/{urllib.parse.quote(p)}")
-            return
-
-    # 2. CHAT FEATURE (Using a Faster Model)
+    # Sirf Chat aur Voice Logic
     try:
         url = "https://api.groq.com/openai/v1/chat/completions"
-        headers = {"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
-        
-        # Humne model badal kar 'llama3-8b-8192' kar diya hai (Ye fast hai)
-        data = {
-            "model": "llama3-8b-8192", 
-            "messages": [{"role": "user", "content": m.text}]
+        headers = {
+            "Authorization": f"Bearer {KEY}",
+            "Content-Type": "application/json"
         }
         
-        r = requests.post(url, headers=headers, json=data).json()
+        # Fast model 'llama3-8b-8192' use kar rahe hain taaki 'Busy' na dikhaye
+        data = {
+            "model": "llama3-8b-8192", 
+            "messages": [
+                {"role": "system", "content": "Aap Chitti AI hain. Hinglish mein short aur friendly jawab dein."},
+                {"role": "user", "content": m.text}
+            ]
+        }
         
-        if 'choices' in r:
-            res = r['choices'][0]['message']['content']
+        response = requests.post(url, headers=headers, json=data).json()
+        
+        if 'choices' in response:
+            res = response['choices'][0]['message']['content']
+            
+            # 1. Pehle Text Reply bhejo
             bot.reply_to(m, res)
             
-            # Voice Message
-            tts = gTTS(text=res, lang='hi')
-            tts.save("v.mp3")
-            with open("v.mp3", "rb") as v: bot.send_voice(m.chat.id, v)
-            os.remove("v.mp3")
+            # 2. Fir Voice Message banao aur bhejo
+            try:
+                tts = gTTS(text=res, lang='hi')
+                tts.save("reply.mp3")
+                with open("reply.mp3", "rb") as audio:
+                    bot.send_voice(m.chat.id, audio)
+                os.remove("reply.mp3")
+            except Exception as e:
+                print(f"Voice Error: {e}")
+                
         else:
-            bot.reply_to(m, "AI ki limit shayad khatam ho gayi hai, main abhi sirf photos bana sakta hoon.")
-    except:
-        pass
+            bot.reply_to(m, "Maaf kijiye, AI abhi reply nahi de paa raha hai.")
+            
+    except Exception as e:
+        print(f"Error: {e}")
+
+def run_flask():
+    app.run(host='0.0.0.0', port=10000)
 
 if __name__ == "__main__":
-    threading.Thread(target=lambda: app.run(host='0.0.0.0', port=10000)).start()
+    threading.Thread(target=run_flask).start()
     bot.infinity_polling()
-            
+    
